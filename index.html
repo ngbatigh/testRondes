@@ -1,0 +1,767 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Gestion des Relevés de Compteurs</title>
+    <link rel="stylesheet" href="styles.css" />
+    <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
+    <script src="lib/qr-scanner.umd.min.js"></script>
+  </head>
+  <body>
+    <div class="overlay" id="overlay"></div>
+
+    <div class="sidebar" id="sidebar">
+      <button class="close-btn" id="closeBtn">&times;</button>
+      <nav>
+        <ul class="sidebar-menu">
+          <li><a href="#" data-action="recap">📋 Recap ronde</a></li>
+          <li>
+            <a href="#" data-action="operateurs">👥 Gestion des opérateurs</a>
+          </li>
+          <li>
+            <a href="#" data-action="compteurs">🔢 Gestion des compteurs</a>
+          </li>
+          <li><a href="#" data-action="rondes">🔄 Gestion des Rondes</a></li>
+          <li><a href="#" data-action="dashboard">📈 Tableau de bord</a></li>
+          <li><a href="#" data-action="tableur">📑 Tableur</a></li>
+        </ul>
+      </nav>
+    </div>
+
+    <div class="container">
+      <header>
+        <button class="menu-btn" id="menuBtn">☰</button>
+        <h1>📊 Relevés de Compteurs</h1>
+      </header>
+
+      <main>
+        <!-- ==================== PANNEAU DE LOGIN ==================== -->
+        <div id="loginPanel" class="panel">
+          <div class="panel-header">
+            <h2>🔐 Connexion</h2>
+          </div>
+          <div class="form-group">
+            <label for="loginUser">Nom d'utilisateur :</label>
+            <input
+              type="text"
+              id="loginUser"
+              placeholder="Ex: gbati"
+              autocomplete="off"
+            />
+          </div>
+          <div class="form-group">
+            <label for="loginMdp">Mot de passe :</label>
+            <input type="password" id="loginMdp" placeholder="Mot de passe" />
+          </div>
+          <button id="loginBtn">✅ Se connecter</button>
+          <div style="text-align: right; margin-top: 10px">
+            <a
+              href="#"
+              id="bypassLink"
+              style="font-size: 11px; color: #999; text-decoration: underline"
+              >bypass→</a
+            >
+          </div>
+          <div id="loginMessage" class="message" style="display: none"></div>
+        </div>
+
+        <!-- ==================== PANNEAU CHOIX RONDE ==================== -->
+        <div id="choixRondePanel" class="panel" style="display: none">
+          <div class="panel-header">
+            <h2>📋 Choix du mode</h2>
+          </div>
+          <div class="form-group">
+            <label>Type de relevé :</label>
+            <div id="choixRondeOptions">
+              <div class="check-item" style="border-left-color: #ffc107">
+                <input
+                  type="radio"
+                  name="choix_ronde"
+                  id="choixRevue"
+                  value="revue"
+                  checked
+                />
+                <label for="choixRevue" style="font-weight: 600"
+                  >📖 Revue</label
+                >
+              </div>
+              <div class="check-item" style="border-left-color: #28a745">
+                <input
+                  type="radio"
+                  name="choix_ronde"
+                  id="choixRonde"
+                  value="ronde"
+                />
+                <label for="choixRonde" style="font-weight: 600"
+                  >🆕 Nouvelle ronde</label
+                >
+              </div>
+            </div>
+          </div>
+          <div
+            id="choixTypeRondeGroup"
+            class="form-group"
+            style="display: none"
+          >
+            <label for="choixTypeRonde">Type de ronde :</label>
+            <select id="choixTypeRonde">
+              <option value="">Sélectionner un type de ronde</option>
+            </select>
+          </div>
+          <button id="validerChoixRonde">✅ Valider</button>
+        </div>
+
+        <!-- ==================== PANNEAU RÉCAPITULATIF ==================== -->
+        <div id="recapPanel" class="panel" style="display: none">
+          <div class="panel-header">
+            <h2>📝 Récapitulatif du relevé</h2>
+          </div>
+          <div class="info-section">
+            <div class="info-grid">
+              <div class="info-item">
+                <span class="info-label">👤 Opérateur</span>
+                <span class="info-value" id="recapOperateur">-</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">🔄 Ronde</span>
+                <span class="info-value" id="recapRonde">-</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">🔢 Compteur</span>
+                <span class="info-value" id="recapCompteur">-</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">📅 Date/Heure</span>
+                <span class="info-value" id="recapDate">-</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">📊 Valeur</span>
+                <span class="info-value" id="recapValeur">-</span>
+              </div>
+            </div>
+          </div>
+          <div class="btn-row">
+            <button class="btn-secondary" id="annulerRecapBtn">
+              ❌ Annuler
+            </button>
+            <button id="confirmerRecapBtn">✅ Confirmer</button>
+          </div>
+        </div>
+
+        <!-- ==================== PANNEAU FIN DE RONDE ==================== -->
+        <div id="finRondePanel" class="panel" style="display: none">
+          <div class="panel-header">
+            <h2>🏁 Fin de ronde</h2>
+          </div>
+          <p style="margin-bottom: 16px; color: #666">
+            Liste de tous les relevés de cette session :
+          </p>
+          <div
+            id="finRondeListe"
+            style="max-height: 400px; overflow-y: auto; margin-bottom: 16px"
+          ></div>
+          <div class="btn-row" style="flex-direction: column; gap: 8px">
+            <button id="finRondeFinBtn">🏁 Fin</button>
+            <button id="finRondeNouvelleSessionBtn" class="btn-secondary">
+              🔄 Nouvelle session
+            </button>
+          </div>
+        </div>
+
+        <!-- ==================== Boîte de dialogue intermédiaire ==================== -->
+        <div id="postConfirmationDialog" class="panel" style="display: none">
+          <div class="panel-header">
+            <h2>✅ Relevé enregistré</h2>
+          </div>
+          <p style="text-align: center; margin: 16px 0; color: #666">
+            Que souhaitez-vous faire ?
+          </p>
+          <div class="btn-row" style="flex-direction: column; gap: 8px">
+            <button id="continuerRondeBtn">🔄 Continuer la ronde</button>
+            <button id="finirRondeBtn" class="btn-secondary">
+              🏁 Finir la ronde
+            </button>
+          </div>
+        </div>
+
+        <!-- ==================== SCANNER QR CODE ==================== -->
+        <div
+          id="scannerPanel"
+          class="panel scanner-section"
+          style="display: none"
+        >
+          <div
+            class="panel-header"
+            style="
+              margin-bottom: 0;
+              padding: 20px;
+              z-index: 10;
+              position: relative;
+            "
+          >
+            <h2 style="color: white; text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5)">
+              📷 Scanner QR Code
+            </h2>
+          </div>
+          <video class="scanner-video" id="video" autoplay playsinline></video>
+          <div class="scanner-overlay">
+            <div class="scanner-frame"></div>
+            <p class="scanner-text" id="scannerStatus">
+              Pointez le code QR vers la caméra
+            </p>
+          </div>
+          <div
+            style="
+              position: relative;
+              z-index: 10;
+              padding: 20px;
+              background: rgba(0, 0, 0, 0.8);
+              width: 100%;
+            "
+          >
+            <div class="btn-row">
+              <button
+                class="btn-secondary"
+                id="annulerScanBtn"
+                style="
+                  background: rgba(255, 255, 255, 0.2) !important;
+                  color: white !important;
+                "
+              >
+                ❌ Annuler
+              </button>
+              <button id="continuerScanBtn">✅ Continuer</button>
+            </div>
+          </div>
+        </div>
+        <canvas id="scanner-canvas" style="display: none"></canvas>
+
+        <!-- ==================== Écran d'accueil Gestion des opérateurs ==================== -->
+        <div id="gestionOperateursMenu" class="panel" style="display: none">
+          <div class="panel-header">
+            <button class="back-btn" id="backFromOperateursMenu">←</button>
+            <h2>👥 Gestion des opérateurs</h2>
+          </div>
+          <div class="menu-cards">
+            <button class="menu-card" id="goToAjouterOperateur">
+              <span class="menu-card-icon">➕</span>
+              <span class="menu-card-text">Ajouter opérateur</span>
+            </button>
+            <button class="menu-card" id="goToModifierOperateur">
+              <span class="menu-card-icon">✏️</span>
+              <span class="menu-card-text">Modifier opérateur</span>
+            </button>
+            <button class="menu-card" id="goToSupprimerOperateur">
+              <span class="menu-card-icon">🗑️</span>
+              <span class="menu-card-text">Supprimer opérateur</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- ==================== Panneau Ajouter opérateur ==================== -->
+        <div id="ajouterOperateurPanel" class="panel" style="display: none">
+          <div class="panel-header">
+            <button class="back-btn" id="backFromAjouterOperateur">←</button>
+            <h2>➕ Ajouter opérateur</h2>
+          </div>
+          <div class="form-group">
+            <label for="nouvelOperateurId">Matricule (ID) :</label>
+            <input type="text" id="nouvelOperateurId" placeholder="Ex: 966" />
+          </div>
+          <div class="form-group">
+            <label for="nouvelOperateurNom">Nom :</label>
+            <input
+              type="text"
+              id="nouvelOperateurNom"
+              placeholder="Ex: NADJOMBE"
+            />
+          </div>
+          <div class="form-group">
+            <label for="nouvelOperateurPrenom">Prénom :</label>
+            <input
+              type="text"
+              id="nouvelOperateurPrenom"
+              placeholder="Ex: Gbati"
+            />
+          </div>
+          <div class="form-group">
+            <label for="nouvelOperateurFonction">Fonction :</label>
+            <input
+              type="text"
+              id="nouvelOperateurFonction"
+              placeholder="Ex: Chef Service"
+            />
+          </div>
+          <div class="form-group">
+            <label for="nouvelOperateurUser">Nom d'utilisateur :</label>
+            <input
+              type="text"
+              id="nouvelOperateurUser"
+              placeholder="Ex: gbati"
+            />
+          </div>
+          <div class="form-group">
+            <label for="nouvelOperateurMdp">Mot de passe :</label>
+            <input
+              type="text"
+              id="nouvelOperateurMdp"
+              placeholder="Ex: admin"
+            />
+          </div>
+          <div class="btn-row">
+            <button class="btn-secondary" id="annulerAjouterOperateur">
+              ❌ Annuler
+            </button>
+            <button id="ajouterOperateurBtn">✅ Ajouter</button>
+          </div>
+        </div>
+
+        <!-- ==================== Panneau Modifier opérateur ==================== -->
+        <div id="modifierOperateurPanel" class="panel" style="display: none">
+          <div class="panel-header">
+            <button class="back-btn" id="backFromModifierOperateur">←</button>
+            <h2>✏️ Modifier opérateur</h2>
+          </div>
+          <div class="form-group">
+            <label for="selectOperateurModif"
+              >Sélectionner un opérateur :</label
+            >
+            <select id="selectOperateurModif">
+              <option value="">Sélectionner...</option>
+            </select>
+          </div>
+          <div id="formModifierOperateur" style="display: none">
+            <div class="form-group">
+              <label for="modifOperateurId">Matricule (ID) :</label>
+              <input type="text" id="modifOperateurId" />
+              <input type="hidden" id="ancienOperateurId" />
+            </div>
+            <div class="form-group">
+              <label for="modifOperateurNom">Nom :</label>
+              <input type="text" id="modifOperateurNom" />
+            </div>
+            <div class="form-group">
+              <label for="modifOperateurPrenom">Prénom :</label>
+              <input type="text" id="modifOperateurPrenom" />
+            </div>
+            <div class="form-group">
+              <label for="modifOperateurFonction">Fonction :</label>
+              <input type="text" id="modifOperateurFonction" />
+            </div>
+            <div class="form-group">
+              <label for="modifOperateurUser">Nom d'utilisateur :</label>
+              <input type="text" id="modifOperateurUser" />
+            </div>
+            <div class="form-group">
+              <label for="modifOperateurMdp">Mot de passe :</label>
+              <input type="text" id="modifOperateurMdp" />
+            </div>
+            <div class="btn-row">
+              <button class="btn-secondary" id="annulerModifierOperateur">
+                ❌ Annuler
+              </button>
+              <button id="modifierOperateurBtn">💾 Enregistrer</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- ==================== Panneau Supprimer opérateur ==================== -->
+        <div id="supprimerOperateurPanel" class="panel" style="display: none">
+          <div class="panel-header">
+            <button class="back-btn" id="backFromSupprimerOperateur">←</button>
+            <h2>🗑️ Supprimer opérateur</h2>
+          </div>
+          <div id="operateursCheckList"></div>
+          <button id="supprimerOperateursBtn">🗑️ Supprimer la sélection</button>
+        </div>
+
+        <!-- ==================== Écran d'accueil Gestion des Compteurs ==================== -->
+        <div id="gestionCompteursMenu" class="panel" style="display: none">
+          <div class="panel-header">
+            <button class="back-btn" id="backFromCompteursMenu">←</button>
+            <h2>🔢 Gestion des compteurs</h2>
+          </div>
+          <div class="menu-cards">
+            <button class="menu-card" id="goToActiverCompteur">
+              <span class="menu-card-icon">✅</span>
+              <span class="menu-card-text">Activer compteur</span>
+            </button>
+            <button class="menu-card" id="goToModifierCompteur">
+              <span class="menu-card-icon">✏️</span>
+              <span class="menu-card-text">Modifier compteur</span>
+            </button>
+            <button class="menu-card" id="goToClonerCompteur">
+              <span class="menu-card-icon">📋</span>
+              <span class="menu-card-text">Cloner compteur</span>
+            </button>
+            <button class="menu-card" id="goToCreerCompteur">
+              <span class="menu-card-icon">➕</span>
+              <span class="menu-card-text">Créer compteur</span>
+            </button>
+            <button class="menu-card" id="goToQrCodeCompteur">
+              <span class="menu-card-icon">📱</span>
+              <span class="menu-card-text">Créer QR Code</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- ==================== Panneau QR Code compteur ==================== -->
+        <div id="qrCodeCompteurPanel" class="panel" style="display: none">
+          <div class="panel-header">
+            <button class="back-btn" id="backFromQrCode">←</button>
+            <h2>📱 Créer QR Code</h2>
+          </div>
+          <div class="form-group">
+            <label for="qrSelectCompteur">Sélectionner un compteur :</label>
+            <select id="qrSelectCompteur">
+              <option value="">Choisir...</option>
+            </select>
+          </div>
+          <div
+            id="qrCodeContainer"
+            style="display: none; text-align: center; margin: 20px 0"
+          >
+            <div
+              id="qrCodeSvg"
+              style="
+                background: white;
+                display: inline-block;
+                padding: 16px;
+                border-radius: 8px;
+                border: 1px solid #e0e0e0;
+              "
+            ></div>
+            <p
+              id="qrCodeInfos"
+              style="margin-top: 12px; color: #666; font-size: 14px"
+            ></p>
+            <button id="telechargerQrBtn">💾 Télécharger QR Code</button>
+          </div>
+        </div>
+
+        <!-- ==================== Panneau Activer compteur ==================== -->
+        <div id="activerCompteurPanel" class="panel" style="display: none">
+          <div class="panel-header">
+            <button class="back-btn" id="backFromActiver">←</button>
+            <h2>✅ Activer compteur</h2>
+          </div>
+          <div id="activerCheckList"></div>
+          <button id="enregistrerActiverBtn">
+            💾 Enregistrer les modifications
+          </button>
+        </div>
+
+        <!-- ==================== Panneau Modifier compteur ==================== -->
+        <div id="modifierCompteurPanel" class="panel" style="display: none">
+          <div class="panel-header">
+            <button class="back-btn" id="backFromModifier">←</button>
+            <h2>✏️ Modifier compteur</h2>
+          </div>
+          <div class="form-group">
+            <label for="modifierSelectCompteur"
+              >Sélectionner un compteur :</label
+            >
+            <select id="modifierSelectCompteur">
+              <option value="">Choisir...</option>
+            </select>
+          </div>
+          <div id="modifierFormContainer" style="display: none">
+            <div class="form-group">
+              <label>ID compteur (lecture seule) :</label>
+              <input type="text" id="modifierIdCompteur" readonly />
+            </div>
+            <div class="form-group">
+              <label for="modifierNom">Nom compteur :</label>
+              <input type="text" id="modifierNom" />
+            </div>
+            <div class="form-group">
+              <label for="modifierUnite">Unité :</label>
+              <input type="text" id="modifierUnite" />
+            </div>
+            <div class="form-group">
+              <label for="modifierDebut">Début compteur :</label>
+              <input type="number" id="modifierDebut" step="any" />
+            </div>
+            <div class="form-group">
+              <label for="modifierRange">Range compteur :</label>
+              <input type="number" id="modifierRange" step="any" />
+            </div>
+            <div class="form-group">
+              <label for="modifierSection">Section :</label>
+              <select id="modifierSection"></select>
+            </div>
+            <div class="form-group">
+              <label for="modifierFamille">Famille :</label>
+              <select id="modifierFamille"></select>
+            </div>
+            <div class="form-group">
+              <label for="modifierGroupe1">Groupe 1 :</label>
+              <select id="modifierGroupe1"></select>
+            </div>
+            <div class="form-group">
+              <label for="modifierGroupe2">Groupe 2 :</label>
+              <select id="modifierGroupe2"></select>
+            </div>
+            <div class="form-group">
+              <label for="modifierDescription">Description :</label>
+              <input type="text" id="modifierDescription" />
+            </div>
+            <div class="form-group checkbox-group">
+              <label>
+                <input type="checkbox" id="modifierVisible" />
+                👁️ Visible
+              </label>
+            </div>
+            <div class="form-group checkbox-group">
+              <label>
+                <input type="checkbox" id="modifierActif" />
+                ✅ Actif
+              </label>
+            </div>
+            <div class="btn-row">
+              <button class="btn-secondary" id="annulerModifier">
+                ❌ Annuler
+              </button>
+              <button id="enregistrerModifierBtn">💾 Enregistrer</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- ==================== Panneau Cloner compteur ==================== -->
+        <div id="clonerCompteurPanel" class="panel" style="display: none">
+          <div class="panel-header">
+            <button class="back-btn" id="backFromCloner">←</button>
+            <h2>📋 Cloner compteur</h2>
+          </div>
+          <div class="form-group">
+            <label for="clonerSelectParent">Compteur parent à cloner :</label>
+            <select id="clonerSelectParent">
+              <option value="">Choisir...</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="clonerNouvelId">Nouvel ID compteur :</label>
+            <input
+              type="text"
+              id="clonerNouvelId"
+              placeholder="Ex: A-XXXX-XXXX-XXXX-XXXX"
+            />
+          </div>
+          <div id="clonerApercu" style="display: none">
+            <hr />
+            <h3>Aperçu du clone</h3>
+            <div
+              id="clonerApercuContent"
+              style="
+                background: #f8f9fa;
+                padding: 12px;
+                border-radius: 8px;
+                font-size: 13px;
+                color: #333;
+                white-space: pre-wrap;
+              "
+            ></div>
+          </div>
+          <div class="btn-row">
+            <button class="btn-secondary" id="annulerCloner">❌ Annuler</button>
+            <button id="executerClonerBtn">📋 Cloner</button>
+          </div>
+        </div>
+
+        <!-- ==================== Panneau Créer compteur ==================== -->
+        <div id="creerCompteurPanel" class="panel" style="display: none">
+          <div class="panel-header">
+            <button class="back-btn" id="backFromCreer">←</button>
+            <h2>➕ Créer compteur</h2>
+          </div>
+          <div class="form-group">
+            <label for="creerIdCompteur">ID compteur :</label>
+            <input
+              type="text"
+              id="creerIdCompteur"
+              placeholder="Ex: A-XXXX-XXXX-XXXX-XXXX"
+            />
+          </div>
+          <div class="form-group">
+            <label for="creerNom">Nom compteur :</label>
+            <input type="text" id="creerNom" />
+          </div>
+          <div class="form-group">
+            <label for="creerUnite">Unité :</label>
+            <input type="text" id="creerUnite" />
+          </div>
+          <div class="form-group">
+            <label for="creerDebut">Début compteur :</label>
+            <input type="number" id="creerDebut" step="any" />
+          </div>
+          <div class="form-group">
+            <label for="creerRange">Range compteur :</label>
+            <input type="number" id="creerRange" step="any" />
+          </div>
+          <div class="form-group">
+            <label for="creerSection">Section :</label>
+            <select id="creerSection"></select>
+          </div>
+          <div class="form-group">
+            <label for="creerFamille">Famille :</label>
+            <select id="creerFamille"></select>
+          </div>
+          <div class="form-group">
+            <label for="creerGroupe1">Groupe 1 :</label>
+            <select id="creerGroupe1"></select>
+          </div>
+          <div class="form-group">
+            <label for="creerGroupe2">Groupe 2 :</label>
+            <select id="creerGroupe2"></select>
+          </div>
+          <div class="form-group">
+            <label for="creerDescription">Description :</label>
+            <input type="text" id="creerDescription" />
+          </div>
+          <div class="form-group checkbox-group">
+            <label>
+              <input type="checkbox" id="creerVisible" checked />
+              👁️ Visible
+            </label>
+          </div>
+          <div class="form-group checkbox-group">
+            <label>
+              <input type="checkbox" id="creerActif" checked />
+              ✅ Actif
+            </label>
+          </div>
+          <div class="btn-row">
+            <button class="btn-secondary" id="annulerCreer">❌ Annuler</button>
+            <button id="executerCreerBtn">✅ Créer</button>
+          </div>
+        </div>
+
+        <!-- ==================== Écran d'accueil Gestion des Rondes ==================== -->
+        <div id="gestionRondesMenu" class="panel" style="display: none">
+          <div class="panel-header">
+            <button class="back-btn" id="backFromRondesMenu">←</button>
+            <h2>🔄 Gestion des Rondes</h2>
+          </div>
+          <div class="menu-cards">
+            <button class="menu-card" id="goToAjouterRonde">
+              <span class="menu-card-icon">➕</span>
+              <span class="menu-card-text">Ajouter type de ronde</span>
+            </button>
+            <button class="menu-card" id="goToSupprimerRonde">
+              <span class="menu-card-icon">🗑️</span>
+              <span class="menu-card-text">Supprimer type de ronde</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- ==================== Panneau Ajouter type de ronde ==================== -->
+        <div id="ajouterRondePanel" class="panel" style="display: none">
+          <div class="panel-header">
+            <button class="back-btn" id="backFromAjouter">←</button>
+            <h2>➕ Ajouter type de ronde</h2>
+          </div>
+          <div class="form-group">
+            <label for="nouvelleRondeNom">Nom de la ronde :</label>
+            <input
+              type="text"
+              id="nouvelleRondeNom"
+              placeholder="Ex: Relevé hebdomadaire"
+            />
+          </div>
+          <div class="form-group">
+            <label for="nouvelleRondeDelai">Délai (minutes) :</label>
+            <input
+              type="number"
+              id="nouvelleRondeDelai"
+              placeholder="Ex: 10080"
+            />
+          </div>
+          <div class="form-group">
+            <label for="nouvelleRondeDescription">Description :</label>
+            <input
+              type="text"
+              id="nouvelleRondeDescription"
+              placeholder="Ex: relevé du lundi matin"
+            />
+          </div>
+          <div class="btn-row">
+            <button class="btn-secondary" id="annulerAjouter">
+              ❌ Annuler
+            </button>
+            <button id="ajouterRondeBtn">✅ Ajouter</button>
+          </div>
+        </div>
+
+        <!-- ==================== Panneau Supprimer type de ronde ==================== -->
+        <div id="supprimerRondePanel" class="panel" style="display: none">
+          <div class="panel-header">
+            <button class="back-btn" id="backFromSupprimer">←</button>
+            <h2>🗑️ Supprimer type de ronde</h2>
+          </div>
+          <div id="rondesCheckList"></div>
+          <button id="supprimerRondesBtn">🗑️ Supprimer la sélection</button>
+        </div>
+
+        <!-- ==================== Formulaire de relevé ==================== -->
+        <form id="releveForm" style="display: none">
+          <div class="form-group">
+            <label for="operateur">Opérateur :</label>
+            <select id="operateur" name="operateur" required>
+              <option value="">Sélectionner un opérateur</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="id_ronde">Type de ronde :</label>
+            <select id="id_ronde" name="id_ronde" required>
+              <option value="">Sélectionner une ronde</option>
+            </select>
+          </div>
+
+          <div class="form-group compteur-group">
+            <div class="compteur-scanner-row">
+              <button
+                type="button"
+                id="scanQrBtn"
+                class="qr-scanner-btn"
+                title="Scanner un QR Code"
+              >
+                <span class="qr-scanner-icon">📷</span>
+                <span>Scanner</span>
+              </button>
+              <div class="compteur-select-wrapper">
+                <label for="compteur">Compteur :</label>
+                <select id="compteur" name="compteur" required>
+                  <option value="">Sélectionner un compteur</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="valeurActuelle">Valeur actuelle :</label>
+            <input
+              type="number"
+              id="valeurActuelle"
+              name="valeurActuelle"
+              step="any"
+              required
+            />
+          </div>
+
+          <button type="submit" id="submitBtn">Valider la saisie</button>
+        </form>
+
+        <div id="message" class="message"></div>
+
+        <!-- Reset discret en bas de page -->
+        <div class="reset-footer">
+          <a href="#" id="resetLinkFooter" class="reset-link">Reset</a>
+        </div>
+      </main>
+    </div>
+
+    <script src="scripts.js"></script>
+  </body>
+</html>
