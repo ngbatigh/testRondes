@@ -1,0 +1,15 @@
+Windows Registry Editor Version 5.00
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\ODBC\ODBC.INI\GestionRondes]
+"Driver"="MySQL ODBC 8.0 Unicode Driver"
+"Server"="127.0.0.1"
+"Database"="gestion_rondes"
+"Port"="3306"
+"User"="root"
+"Option"=dword:00000003
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\ODBC\ODBC.INI\GestionRondes\Engines]
+[HKEY_LOCAL_MACHINE\SOFTWARE\ODBC\ODBC.INI\GestionRondes\Engines\MySql]
+"ImpersonateUser"=dword:00000000
+"Password"=""
+"User"="root"
