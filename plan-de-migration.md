@@ -620,16 +620,20 @@ jobs:
 
 ### Nouveaux fichiers
 
-| Fichier                       | Description                                     |
-| ----------------------------- | ----------------------------------------------- |
-| `backend/config/db.php`       | Configuration PDO                               |
-| `backend/endpoints/*.php`     | Tous les endpoints API                          |
-| `backend/middleware/auth.php` | Authentification                                |
-| `docs/plan-de-migration.md`   | Ce document                                     |
-| `docs/api-documentation.md`   | Documentation API                               |
-| `backend/tools/access.php`    | Interface admin BDD web                         |
-| `data/gestion-rondes.accdb`   | Fichier Access pour maintenance graphique MySQL |
-| `deployment/*.sh`             | Scripts de déploiement                          |
+| Fichier                         | Description                                     |
+| ------------------------------- | ----------------------------------------------- |
+| `backend/config/db.php`         | Configuration PDO                               |
+| `backend/endpoints/*.php`       | Tous les endpoints API                          |
+| `backend/middleware/auth.php`   | Authentification                                |
+| `backend/config/.htaccess`      | Protection dossier config                       |
+| `docs/plan-de-migration.md`     | Ce document                                     |
+| `docs/api-documentation.md`     | Documentation API                               |
+| `docs/deployment-guide.md`      | Guide de déploiement                            |
+| `backend/tools/access.php`      | Interface admin BDD web                         |
+| `data/gestion-rondes.accdb`     | Fichier Access pour maintenance graphique MySQL |
+| `deployment/deploy-frontend.sh` | Script de déploiement frontend                  |
+| `deployment/deploy-backend.sh`  | Script de déploiement backend                   |
+| `deployment/backup.sh`          | Script de sauvegarde BDD                        |
 
 ### Fichiers à modifier
 
