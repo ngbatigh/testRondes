@@ -282,7 +282,7 @@ async function loadSavedData() {
 **Livrables** :
 
 - Tous les endpoints PHP fonctionnels
-- Script de migration des anciennes données localStorage → MySQL
+- Scripts de test automatisés (`test_endpoints.php`, `test_security.php`)
 - Documentation API (Postman/OpenAPI)
 
 ---
