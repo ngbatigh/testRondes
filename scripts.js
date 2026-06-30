@@ -1,4 +1,34 @@
 // ============================================================
+// CONFIGURATION API & MODE DÉGRADÉ
+// ============================================================
+
+const API_BASE_URL = "backend/endpoints";
+let isApiAvailable = true;
+let useLocalStorageFallback = false;
+
+async function checkApiAvailability() {
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 3000);
+    const response = await fetch(`${API_BASE_URL}/get_data.php`, {
+      method: "HEAD",
+      headers: { Accept: "application/json" },
+      signal: controller.signal,
+    });
+    clearTimeout(timeoutId);
+    isApiAvailable = response.ok;
+  } catch (error) {
+    console.warn("API indisponible, mode hors-ligne activé :", error.message);
+    isApiAvailable = false;
+  }
+}
+
+function enableLocalStorageFallback() {
+  useLocalStorageFallback = true;
+  isApiAvailable = false;
+}
+
+// ============================================================
 // DONNÉES
 // ============================================================
 
@@ -652,7 +682,7 @@ function fillCompteurSelect() {
     });
 }
 
-function saveReleve(id_ronde, id_operateur, id_compteur, valeur) {
+async function saveReleve(id_ronde, id_operateur, id_compteur, valeur) {
   const now = new Date();
   const dateStr = now.toISOString().split("T")[0];
   const heureStr = now.toTimeString().split(" ")[0].substring(0, 5);
@@ -667,6 +697,35 @@ function saveReleve(id_ronde, id_operateur, id_compteur, valeur) {
     commentaire: "",
   };
 
+  // Envoi vers l'API si disponible
+  if (isApiAvailable && !useLocalStorageFallback) {
+    try {
+      const response = await fetch(`${API_BASE_URL}/save_releve.php`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify({ releves: [newReleve] }),
+      });
+
+      if (response.ok) {
+        console.log("✅ Relevé envoyé au backend");
+        // Sauvegarde locale pour historique
+        if (!rondeDB[id_compteur]) {
+          rondeDB[id_compteur] = [];
+        }
+        rondeDB[id_compteur].push(newReleve);
+        localStorage.setItem("rondeDB", JSON.stringify(rondeDB));
+        return;
+      }
+    } catch (error) {
+      console.warn("Erreur API, sauvegarde locale :", error);
+      enableLocalStorageFallback();
+    }
+  }
+
+  // Fallback : sauvegarde locale uniquement
   if (!rondeDB[id_compteur]) {
     rondeDB[id_compteur] = [];
   }
@@ -1874,7 +1933,35 @@ function setupEventListeners() {
 // CHARGEMENT DES DONNÉES ET INITIALISATION
 // ============================================================
 
-function loadSavedData() {
+async function loadSavedData() {
+  if (!useLocalStorageFallback) {
+    await checkApiAvailability();
+  }
+
+  if (isApiAvailable && !useLocalStorageFallback) {
+    try {
+      const response = await fetch(`${API_BASE_URL}/get_data.php`, {
+        headers: { Accept: "application/json" },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        sections = data.sections;
+        famille_list = data.familles;
+        type_ronde = data.type_ronde;
+        tabOperateurs = data.operateurs;
+        tabCompteurs = data.compteurs;
+        rondeDB = {};
+        fillRondeSelect();
+        fillCompteurSelect();
+        return;
+      }
+    } catch (error) {
+      console.warn("Erreur API, basculement localStorage :", error);
+      enableLocalStorageFallback();
+    }
+  }
+
   const hasSections = localStorage.getItem("sections");
   const hasTypeRonde = localStorage.getItem("type_ronde");
   const hasTabCompteurs = localStorage.getItem("tabCompteurs");
@@ -1897,8 +1984,8 @@ function loadSavedData() {
   fillCompteurSelect();
 }
 
-function init() {
-  loadSavedData();
+async function init() {
+  await loadSavedData();
   remplirOperateursSelect();
   setupEventListeners();
   setupSidebar();

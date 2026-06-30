@@ -114,6 +114,8 @@ testRondes/
 ├── data/
 │   └── gestion-rondes.accdb          # Fichier Access lié à MySQL (maintenance graphique)
 │
+├── data-schema.js                    # Objet unique fusionnant schéma, données et initialisations
+│
 ├── docs/
 │   ├── plan-de-migration.md          # Ce document
 │   ├── data-structure.md             # Documentation des données
@@ -154,14 +156,22 @@ testRondes/
 - [x] Créer `database.sql` avec les tables et données par défaut
 - [x] Mettre en place l'environnement de développement backend
 - [x] Rédiger la documentation technique
+- [x] Créer `data-schema.js` — Objet unique fusionnant schéma, données initiales et configurations
 
 **Livrables** :
 
 - `data-structure.md` : Documentation des données
 - `database.sql` : Script de création de la base
+- `data-schema.js` : Objet unique avec schéma, valeurs par défaut, relations, méthodes utilitaires
 - `api/config/db.php` : Configuration PDO
 - `api/get_data.php` : Endpoint de récupération des configurations
 - `api/save_releve.php` : Endpoint d'enregistrement des relevés
+- `scripts.js` : Adaptation frontend avec API et mode dégradé
+- `api/login.php` : Authentification
+- `api/compteurs.php` : CRUD compteurs
+- `api/operateurs.php` : CRUD opérateurs
+- `api/rondes.php` : CRUD types de ronde
+- `api/history.php` : Historique des relevés
 
 ---
 
